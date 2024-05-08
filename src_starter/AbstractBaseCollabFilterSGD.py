@@ -233,12 +233,14 @@ class AbstractBaseCollabFilterSGD(object):
                     avg_grad_norm_str = " | ".join(avg_grad_norm_str_list)
 
                     print(
-                        "epoch %11.3f | loss_total % 11.5f | train_MAE% 11.5f | valid_MAE % 11.5f | %s"
+                        "epoch %11.3f | loss_total % 11.5f | train_AUC% 11.5f | train_MAE% 11.5f | valid_AUC % 11.5f | valid_MAE % 11.5f | %s"
                         % (
                             epoch,
                             loss if epoch <= 2 else smooth_loss,
-                            train_perf_dict["MAE"],
-                            valid_perf_dict["MAE"],
+                            train_perf_dict["auc"],
+                            train_perf_dict["mae"],
+                            valid_perf_dict["auc"],
+                            valid_perf_dict["mae"],
                             avg_grad_norm_str,
                         )
                     )
