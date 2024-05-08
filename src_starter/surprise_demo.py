@@ -20,17 +20,17 @@ reader = Reader(
 train_set = Dataset.load_from_file(
     'data_movie_lens_100k/ratings_all_development_set.csv', reader=reader)
 
-# h = pd.read_csv('data_movie_lens_100k/ratings_all_development_set.csv')['rating']
-# fig, ax = plt.subplots(figsize=(8, 6))
-# ax.hist(h, density=False, bins= 15)
+h = pd.read_csv('data_movie_lens_100k/ratings_all_development_set.csv')['rating']
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.hist(h, density=False, bins= 15)
 
-# for rect in ax.patches:
-#     height = rect.get_height()
-#     if height == 0:
-#         continue
-#     ax.annotate(f'{int(height)}', xy=(rect.get_x()+rect.get_width()/2, height), 
-#                 xytext=(0, 5), textcoords='offset points', ha='center', va='bottom') 
-# plt.show()
+for rect in ax.patches:
+    height = rect.get_height()
+    if height == 0:
+        continue
+    ax.annotate(f'{int(height)}', xy=(rect.get_x()+rect.get_width()/2, height), 
+                xytext=(0, 5), textcoords='offset points', ha='center', va='bottom') 
+plt.show()
 train_set = train_set.build_full_trainset()
 
 # Use the SVD algorithm

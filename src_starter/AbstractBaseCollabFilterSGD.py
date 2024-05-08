@@ -5,8 +5,9 @@ import sys
 import pandas as pd
 from sklearn import metrics
 
+
 class AbstractBaseCollabFilterSGD(object):
-    """ Base class for user-movie rating prediction via matrix factorization.
+    """Base class for user-movie rating prediction via matrix factorization.
 
     Attributes set by calling __init__()
     ------------------------------------
@@ -24,10 +25,16 @@ class AbstractBaseCollabFilterSGD(object):
         Values are *numpy arrays* of parameter values
     """
 
-    def __init__(self,
-            step_size=0.1, n_epochs=100, batch_size=1000,
-            n_factors=0, alpha=0.00, random_state=20190415):
-        """ Construct instance and set its attributes
+    def __init__(
+        self,
+        step_size=0.1,
+        n_epochs=100,
+        batch_size=1000,
+        n_factors=0,
+        alpha=0.00,
+        random_state=20190415,
+    ):
+        """Construct instance and set its attributes
 
         Args
         ----
@@ -35,10 +42,10 @@ class AbstractBaseCollabFilterSGD(object):
             Step size / learning rate used in each gradient descent step.
         n_epochs : int
             Total number of epochs (complete passes thru provided training set)
-            to complete during a call to fit. 
+            to complete during a call to fit.
         batch_size : int
             Number of rating examples to process in each 'batch' or 'minibatch'
-            of stochastic gradient descent. 
+            of stochastic gradient descent.
         n_factors : int
             Number of dimensions each per-user/per-item vector has.
             (Will be unused by simpler models).
@@ -49,9 +56,9 @@ class AbstractBaseCollabFilterSGD(object):
         -------
         New instance of this class
         """
-        self.n_factors  = int(n_factors)
-        self.alpha      = float(alpha)
-        self.step_size  = step_size
+        self.n_factors = int(n_factors)
+        self.alpha = float(alpha)
+        self.step_size = step_size
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         if isinstance(random_state, int):
@@ -59,15 +66,14 @@ class AbstractBaseCollabFilterSGD(object):
         else:
             self.random_state = random_state
 
-
     def evaluate_perf_metrics(self, user_id_N, item_id_N, ratings_N):
-        ''' Evaluate performance metrics for current model on given dataset.
+        """Evaluate performance metrics for current model on given dataset.
 
         Returns
         -------
         perf_dict : dict
             Key,value pairs represent the names and values of useful metrics.
-        '''
+        """
         n_examples = user_id_N.size
         yhat_N = self.predict(user_id_N, item_id_N, **self.param_dict)
         fpr, tpr, thresholds = metrics.roc_curve(y_true=ratings_N > 4, y_score=yhat_N)
@@ -77,12 +83,11 @@ class AbstractBaseCollabFilterSGD(object):
         return dict(mse=mse, mae=mae, auc=auc)
 
     def calc_loss_wrt_parameter_dict(self, param_dict, data_tuple):
-        ''' Template method to compute loss at specific parameters.
-        '''
+        """Template method to compute loss at specific parameters."""
         raise NotImplementedError("Subclasses need to override this method")
 
     def calc_loss_and_grad_wrt_parameter_dict(self, param_dict, data_tuple):
-        ''' Compute loss and gradient at specific parameters.
+        """Compute loss and gradient at specific parameters.
 
         Uses autograd package to compute gradients.
 
@@ -96,19 +101,21 @@ class AbstractBaseCollabFilterSGD(object):
             Keys are string names of parameters.
             Values are NumPy arrays, providing gradient of the parameter.
             Will have exactly the same keys as a valid param_dict
-        '''
+        """
         try:
             self._calc_loss_and_grad_wrt_param_dict
         except AttributeError:
             self._calc_loss_and_grad_wrt_param_dict = value_and_grad(
-                self.calc_loss_wrt_parameter_dict, argnum=[0])
+                self.calc_loss_wrt_parameter_dict, argnum=[0]
+            )
         loss, grad_dict_tuple = self._calc_loss_and_grad_wrt_param_dict(
-            self.param_dict, data_tuple)
-        grad_dict = grad_dict_tuple[0] # Unpack tuple output of autograd
+            self.param_dict, data_tuple
+        )
+        grad_dict = grad_dict_tuple[0]  # Unpack tuple output of autograd
         return loss, grad_dict
 
     def fit(self, train_data_tuple, valid_data_tuple=None):
-        """ Fit latent factor model to user-movie ratings via gradient descent.
+        """Fit latent factor model to user-movie ratings via gradient descent.
 
         Calling this method will attempt to solve the optimization problem:
 
@@ -121,9 +128,9 @@ class AbstractBaseCollabFilterSGD(object):
             loss_total(r, U, V) = error(r, U, V) + \alpha * penalty(U, V)
 
         The regression error term is just squared error over observed ratings:
-        
+
             error(r, U, V) = \sum_{i,j} ( r_i,j - dot(U[i], V[j]) )^2
-        
+
         And the regularization penalty is:
 
             penalty(U, V) = \sum_i L2norm(U_i) + \sum_j L2norm(V_j)
@@ -147,13 +154,16 @@ class AbstractBaseCollabFilterSGD(object):
         batch_loader = RatingsMiniBatchIterator(
             *train_data_tuple,
             batch_size=self.batch_size,
-            random_state=self.random_state)
+            random_state=self.random_state
+        )
 
         self.trace_epoch = []
         self.trace_loss = []
         self.trace_smooth_loss = []
         self.trace_auc_train = []
+        self.trace_mae_train = []
         self.trace_auc_valid = []
+        self.trace_mae_valid = []
 
         self.all_loss = []
 
@@ -165,7 +175,7 @@ class AbstractBaseCollabFilterSGD(object):
         for key in self.param_dict.keys():
             self.trace_smooth_norm_per_param[key] = list()
 
-        for epoch_count in range(self.n_epochs): 
+        for epoch_count in range(self.n_epochs):
             epoch = 1.0 * epoch_count
             batch_loader.shuffle()
 
@@ -177,7 +187,8 @@ class AbstractBaseCollabFilterSGD(object):
                 #   Keys are string names of individual parameters
                 #   Values are autograd-generated numpy arrays
                 loss, grad_dict = self.calc_loss_and_grad_wrt_parameter_dict(
-                    self.param_dict, batch_tuple)
+                    self.param_dict, batch_tuple
+                )
 
                 ## Rescale loss and gradient vectors
                 # So we always estimate the *per-example loss*
@@ -191,7 +202,8 @@ class AbstractBaseCollabFilterSGD(object):
                 ## Periodically report progress to stdout
                 ## & write to internal state attributes: self.trace_*
                 do_report_now = self.check_if_report_progress_now(
-                    epoch_count, self.n_epochs, i, batch_loader.n_batches)
+                    epoch_count, self.n_epochs, i, batch_loader.n_batches
+                )
                 if do_report_now:
                     self.trace_epoch.append(epoch)
                     self.trace_loss.append(loss)
@@ -199,13 +211,16 @@ class AbstractBaseCollabFilterSGD(object):
                     # Compute MAE/MSE metrics on training and validation data
                     train_perf_dict = self.evaluate_perf_metrics(*train_data_tuple)
                     valid_perf_dict = self.evaluate_perf_metrics(*valid_data_tuple)
-                    self.trace_auc_train.append(train_perf_dict['auc'])
-                    self.trace_auc_valid.append(valid_perf_dict['auc'])
+
+                    self.trace_auc_train.append(train_perf_dict["auc"])
+                    self.trace_mae_train.append(train_perf_dict["mae"])
+                    self.trace_auc_valid.append(valid_perf_dict["auc"])
+                    self.trace_mae_valid.append(valid_perf_dict["mae"])
 
                     # Compute 'smoothed' loss by averaging over last B batches
                     # Might remove some of the stochasticity in using only the
                     # loss from most recent batch.
-                    smooth_loss = np.mean(self.all_loss[-batch_loader.n_batches:])
+                    smooth_loss = np.mean(self.all_loss[-batch_loader.n_batches :])
                     self.trace_smooth_loss.append(smooth_loss)
 
                     # Compute L1 norm of gradient of each parameter
@@ -215,25 +230,30 @@ class AbstractBaseCollabFilterSGD(object):
                         self.trace_norm_per_param[key].append(norm)
                         cur_norm_str = "grad_wrt_%s %11.5f" % (key, norm)
                         avg_grad_norm_str_list.append(cur_norm_str)
-                    avg_grad_norm_str = ' | '.join(avg_grad_norm_str_list)
+                    avg_grad_norm_str = " | ".join(avg_grad_norm_str_list)
 
-                    print("epoch %11.3f | loss_total % 11.5f | train_AUC% 11.5f | valid_AUC % 11.5f | %s" % (
-                        epoch, loss if epoch <= 2 else smooth_loss,
-                        train_perf_dict['auc'], valid_perf_dict['auc'],
-                        avg_grad_norm_str))
+                    print(
+                        "epoch %11.3f | loss_total % 11.5f | train_MAE% 11.5f | valid_MAE % 11.5f | %s"
+                        % (
+                            epoch,
+                            loss if epoch <= 2 else smooth_loss,
+                            train_perf_dict["MAE"],
+                            valid_perf_dict["MAE"],
+                            avg_grad_norm_str,
+                        )
+                    )
 
                 ## Update each parameter by taking step in direction of gradient
-                epoch += n_per_batch / n_total 
+                epoch += n_per_batch / n_total
                 for key, arr in self.param_dict.items():
                     arr[:] = arr - self.step_size * grad_dict[key]
 
         # That's all folks.
 
-
     def check_if_report_progress_now(
-            self, epoch_count, max_epoch,
-            batch_count_within_epoch, max_batch_per_epoch):
-        ''' Helper method to decide when to report progress on valid set.
+        self, epoch_count, max_epoch, batch_count_within_epoch, max_batch_per_epoch
+    ):
+        """Helper method to decide when to report progress on valid set.
 
         Will check current training progress (num steps completed, etc.)
         and determine if we should perform validation set diagnostics now.
@@ -242,10 +262,10 @@ class AbstractBaseCollabFilterSGD(object):
         -------
         do_report_now : boolean
             True if report should be done, False otherwise
-        '''
-        is_last_step = (
-            epoch_count == (max_epoch - 1)
-            and batch_count_within_epoch == (max_batch_per_epoch - 1))
+        """
+        is_last_step = epoch_count == (max_epoch - 1) and batch_count_within_epoch == (
+            max_batch_per_epoch - 1
+        )
 
         if epoch_count == 0 and batch_count_within_epoch < 4:
             # Do a report at each of first 4 steps
@@ -255,12 +275,13 @@ class AbstractBaseCollabFilterSGD(object):
             return True
 
         for max_epoch, freq in [
-                (2, 1/8),
-                (8, 1/2),
-                (32, 1.0),
-                (128, 2.0),
-                (512, 4.0),
-                (2048, 8.0)]:
+            (2, 1 / 8),
+            (8, 1 / 2),
+            (32, 1.0),
+            (128, 2.0),
+            (512, 4.0),
+            (2048, 8.0),
+        ]:
             if epoch_count >= max_epoch:
                 continue
             if freq < 1:
@@ -275,10 +296,8 @@ class AbstractBaseCollabFilterSGD(object):
         return False
 
 
-
-
 class RatingsMiniBatchIterator(object):
-    """ Iterator to loop through small batches of (user,item,rating) examples
+    """Iterator to loop through small batches of (user,item,rating) examples
 
     Given arrays defining (i, j, k) values,
     will produce minibatches of these values of desired batch size.
@@ -316,7 +335,7 @@ class RatingsMiniBatchIterator(object):
     """
 
     def __init__(self, us, vs, ratings, random_state=np.random, batch_size=64):
-        ''' Construct iterator and set its attributes
+        """Construct iterator and set its attributes
 
         Args
         ----
@@ -324,11 +343,11 @@ class RatingsMiniBatchIterator(object):
         vs : int array
         ratings : int array
         batch_size : int
-            
+
         Returns
         -------
-        New instance of this class 
-        '''
+        New instance of this class
+        """
         try:
             self.random_state = np.random.RandomState(random_state)
         except Exception:
@@ -350,14 +369,13 @@ class RatingsMiniBatchIterator(object):
         # Set current batch counter to 0
         self.cur_batch_id = 0
 
-
     def shuffle(self, random_state=None):
-        """ Shuffle internal dataset to a random order
+        """Shuffle internal dataset to a random order
 
         Returns
         -------
         Nothing.
-        """        
+        """
         if random_state is None:
             random_state = self.random_state
         perm_ids = random_state.permutation(self.n_examples)
@@ -365,9 +383,8 @@ class RatingsMiniBatchIterator(object):
         self.v = self.v[perm_ids]
         self.rating = self.rating[perm_ids]
 
-
     def __next__(self):
-        """ Get next batch of ratings data
+        """Get next batch of ratings data
 
         Returns
         -------
@@ -382,23 +399,24 @@ class RatingsMiniBatchIterator(object):
             self.cur_batch_id = 0
             raise StopIteration
         else:
-            start = int(np.sum(self.batch_size_B[:self.cur_batch_id]))
+            start = int(np.sum(self.batch_size_B[: self.cur_batch_id]))
             stop = start + int(self.batch_size_B[self.cur_batch_id])
             cur_batch_tuple = (
                 self.u[start:stop],
                 self.v[start:stop],
-                self.rating[start:stop])
+                self.rating[start:stop],
+            )
             self.cur_batch_id += 1
             return cur_batch_tuple
 
     def __iter__(self):
-        ''' Allow using this object directly as an iterator
+        """Allow using this object directly as an iterator
 
         That is, we can use syntax like:
-        
+
         for batch in RatingsMiniBatchIterator(...):
             do something
 
         This method tells python that this object supports this.
-        '''
+        """
         return self

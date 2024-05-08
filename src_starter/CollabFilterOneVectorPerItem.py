@@ -11,8 +11,11 @@ Scroll down to __main__ to see a usage example.
 import autograd.numpy as ag_np
 
 # Use helper packages
-from AbstractBaseCollabFilterSGD import AbstractBaseCollabFilterSGD
-from train_valid_test_loader import load_train_valid_test_datasets
+from .AbstractBaseCollabFilterSGD import AbstractBaseCollabFilterSGD
+from .train_valid_test_loader import load_train_valid_test_datasets
+
+# from AbstractBaseCollabFilterSGD import AbstractBaseCollabFilterSGD
+# from train_valid_test_loader import load_train_valid_test_datasets
 
 # Some packages you might need (uncomment as necessary)
 ## import pandas as pd
@@ -58,8 +61,8 @@ class CollabFilterOneVectorPerItem(AbstractBaseCollabFilterSGD):
             mu=ag_np.ones(1),
             b_per_user=ag_np.ones(n_users),  # FIX dimensionality
             c_per_item=ag_np.ones(n_items),  # FIX dimensionality
-            U=0.001 * random_state.randn(n_users, self.n_factors),  # FIX dimensionality
-            V=0.001 * random_state.randn(n_items, self.n_factors),  # FIX dimensionality
+            U=0.01 * random_state.randn(n_users, self.n_factors),  # FIX dimensionality
+            V=0.01 * random_state.randn(n_items, self.n_factors),  # FIX dimensionality
         )
 
     def predict(
@@ -118,9 +121,11 @@ class CollabFilterOneVectorPerItem(AbstractBaseCollabFilterSGD):
         loss_total = ag_np.sum(ag_np.square(y_N - yhat_N))
 
         # Add L2 regularization terms
-        for param_name in ["U", "V", "b_per_user", "c_per_item"]:
-            param = param_dict[param_name]
-            loss_total += self.alpha * ag_np.sum(ag_np.square(param))
+        param_u = param_dict["U"][data_tuple[0]]
+        param_v = param_dict["V"][data_tuple[1]]
+        loss_total += self.alpha * (
+            ag_np.sum(ag_np.square(param_u)) + ag_np.sum(ag_np.square(param_v))
+        )
 
         return loss_total
 
