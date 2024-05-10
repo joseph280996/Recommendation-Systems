@@ -33,6 +33,8 @@ class AbstractBaseCollabFilterSGD(object):
         n_factors=0,
         alpha=0.00,
         random_state=20190415,
+        tol=1e-5,
+        n_iter_no_change=50,
     ):
         """Construct instance and set its attributes
 
@@ -65,6 +67,8 @@ class AbstractBaseCollabFilterSGD(object):
             self.random_state = np.random.RandomState(random_state)
         else:
             self.random_state = random_state
+        self.tol = tol
+        self.n_iter_no_change = n_iter_no_change
 
     def evaluate_perf_metrics(self, user_id_N, item_id_N, ratings_N):
         """Evaluate performance metrics for current model on given dataset.
@@ -205,12 +209,12 @@ class AbstractBaseCollabFilterSGD(object):
                     epoch_count, self.n_epochs, i, batch_loader.n_batches
                 )
                 if do_report_now:
-                    self.trace_epoch.append(epoch)
-                    self.trace_loss.append(loss)
-
                     # Compute MAE/MSE metrics on training and validation data
                     train_perf_dict = self.evaluate_perf_metrics(*train_data_tuple)
                     valid_perf_dict = self.evaluate_perf_metrics(*valid_data_tuple)
+
+                    self.trace_epoch.append(epoch)
+                    self.trace_loss.append(loss)
 
                     self.trace_auc_train.append(train_perf_dict["auc"])
                     self.trace_mae_train.append(train_perf_dict["mae"])

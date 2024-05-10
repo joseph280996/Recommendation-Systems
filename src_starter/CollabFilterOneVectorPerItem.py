@@ -11,8 +11,8 @@ Scroll down to __main__ to see a usage example.
 import autograd.numpy as ag_np
 
 # Use helper packages
-from .AbstractBaseCollabFilterSGD import AbstractBaseCollabFilterSGD
-from .train_valid_test_loader import load_train_valid_test_datasets
+from AbstractBaseCollabFilterSGD import AbstractBaseCollabFilterSGD
+from train_valid_test_loader import load_train_valid_test_datasets
 
 # from AbstractBaseCollabFilterSGD import AbstractBaseCollabFilterSGD
 # from train_valid_test_loader import load_train_valid_test_datasets
@@ -94,10 +94,10 @@ class CollabFilterOneVectorPerItem(AbstractBaseCollabFilterSGD):
         # TODO: Update with actual prediction logic
         N = user_id_N.size
         yhat_N = (
-            mu
-            + b_per_user[user_id_N]
-            + c_per_item[item_id_N]
-            + ag_np.sum(U[user_id_N] * V[item_id_N], axis=1)
+            mu # Global bias
+            + b_per_user[user_id_N] # Per user bias
+            + c_per_item[item_id_N] # Per item bias
+            + ag_np.sum(U[user_id_N] * V[item_id_N], axis=1) # Prediction U*V
         )
         return yhat_N
 
