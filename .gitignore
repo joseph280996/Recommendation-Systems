@@ -1,1 +1,7 @@
 **/*__pycache__/*
+*.fls
+*.aux
+*.log
+*.fdb_latexmk
+*.pdf
+*.synctex.gz
